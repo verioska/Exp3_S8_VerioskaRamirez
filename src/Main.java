@@ -1,240 +1,250 @@
-import java.util.*;
-
-class Cliente {
-    String idCliente;
-    String nombre;
-    String tipoComprador;
-
-    Cliente(String idCliente, String nombre, String tipoComprador) {
-        this.idCliente = idCliente;
-        this.nombre = nombre;
-        this.tipoComprador = tipoComprador;
-    }
-}
-
-class Venta {
-    String idVenta;
-    Cliente cliente;
-    String tipoEntrada;
-    String asiento;
-    int cantidad;
-
-    Venta(String idVenta, Cliente cliente, String tipoEntrada, String asiento, int cantidad) {
-        this.idVenta = idVenta;
-        this.cliente = cliente;
-        this.tipoEntrada = tipoEntrada;
-        this.asiento = asiento;
-        this.cantidad = cantidad;
-    }
-
-    double calcularPrecio() {
-        double precioBase = tipoEntrada.equalsIgnoreCase("VIP") ? 15000 : 10000;
-        double descuento = 0;
-
-        switch (cliente.tipoComprador.toLowerCase()) {
-            case "estudiante": descuento = 0.1; break;
-            case "tercera edad": descuento = 0.15; break;
-            default: descuento = 0; break;
-        }
-
-        return precioBase * (1 - descuento);
-    }
-}
-
-class SistemaReservaciones {
-    final int MAX_VENTAS = 100;
-    final int MAX_CLIENTES = 100;
-
-    Venta[] ventas = new Venta[MAX_VENTAS];
-    Cliente[] clientes = new Cliente[MAX_CLIENTES];
-    int totalVentas = 0;
-    int totalClientes = 0;
-
-    String[] asientosVIP = {"A1", "A2", "A3", "A4", "A5"};
-    String[] asientosGeneral = {"B1", "B2", "B3", "B4", "B5"};
-
-    ArrayList<String> asientosOcupados = new ArrayList<>();
-
-
-    public void realizarReservacion(String tipoEntrada, String tipoComprador, String nombreCliente, String asiento) {
-        String idCliente = "C" + (totalClientes + 1);
-        Cliente cliente = new Cliente(idCliente, nombreCliente, tipoComprador);
-        clientes[totalClientes++] = cliente;
-
-        String idVenta = "V" + (totalVentas + 1);
-        Venta venta = new Venta(idVenta, cliente, tipoEntrada, asiento, 1);
-
-        if (totalVentas < ventas.length) {
-            ventas[totalVentas++] = venta;
-            asientosOcupados.add(asiento);
-        } else {
-            System.out.println("Capacidad máxima de ventas alcanzada.");
-        }
-    }
-
-    public String seleccionarAsiento(String tipoEntrada, Scanner sc) {
-        String[] asientos = tipoEntrada.equalsIgnoreCase("VIP") ? asientosVIP : asientosGeneral;
-        String asientoSeleccionado;
-
-        do {
-            System.out.print("Ingrese su asiento " + Arrays.toString(asientos) + ": ");
-            asientoSeleccionado = sc.nextLine().toUpperCase().trim();
-
-            if (!Arrays.asList(asientos).contains(asientoSeleccionado)) {
-                System.out.println("Ese asiento no es válido para el tipo de entrada seleccionado.");
-            } else if (asientosOcupados.contains(asientoSeleccionado)) {
-                System.out.println("Ese asiento ya está ocupado. Elija otro.");
-            } else {
-                return asientoSeleccionado;
-            }
-        } while (true);
-    }
-
-    public void mostrarResumenVentas() {
-        System.out.println("\n--- Resumen de Ventas ---");
-        double totalIngresos = 0;
-        int totalEntradas = 0;
-
-        for (int i = 0; i < totalVentas; i++) {
-            Venta venta = ventas[i];
-            System.out.println("ID Venta: " + venta.idVenta);
-            System.out.println("Cliente: " + venta.cliente.nombre);
-            System.out.println("Tipo de Entrada: " + venta.tipoEntrada);
-            System.out.println("Tipo de Comprador: " + venta.cliente.tipoComprador);
-            System.out.println("Asiento: " + venta.asiento);
-            double precio = venta.calcularPrecio();
-            System.out.println("Precio pagado: $" + precio);
-            totalIngresos += precio;
-            totalEntradas += venta.cantidad;
-            System.out.println("------------------------");
-        }
-
-        System.out.println("Total entradas vendidas: " + totalEntradas);
-        System.out.println("Total ingresos: $" + totalIngresos);
-    }
-
-    public void editarReservacion(Scanner sc) {
-        System.out.print("\nIngrese el nombre del cliente a editar: ");
-        String nombre = sc.nextLine();
-        Venta venta = null;
-
-        for (int i = 0; i < totalVentas; i++) {
-            if (ventas[i].cliente.nombre.equalsIgnoreCase(nombre)) {
-                venta = ventas[i];
-                break;
-            }
-        }
-
-        if (venta == null) {
-            System.out.println("No se encontró la reservación.");
-            return;
-        }
-
-        int opcion;
-        do {
-            System.out.println("\n--- Menú de Edición ---");
-            System.out.println("1. Editar nombre");
-            System.out.println("2. Editar tipo de entrada");
-            System.out.println("3. Editar tipo de comprador");
-            System.out.println("4. Salir");
-            System.out.print("Ingrese una opción: ");
-            opcion = sc.nextInt(); sc.nextLine();
-
-            switch (opcion) {
-                case 1:
-                    System.out.print("Nuevo nombre: ");
-                    venta.cliente.nombre = sc.nextLine();
-                    break;
-                case 2:
-                    System.out.print("Nuevo tipo de entrada (VIP o General): ");
-                    venta.tipoEntrada = sc.nextLine();
-                    break;
-                case 3:
-                    System.out.print("Nuevo tipo de comprador: ");
-                    venta.cliente.tipoComprador = sc.nextLine();
-                    break;
-                case 4:
-                    System.out.println("Saliendo del editor...");
-                    break;
-                default:
-                    System.out.println("Opción inválida");
-            }
-        } while (opcion != 4);
-    }
-
-    public void eliminarReservacion(Scanner sc) {
-        System.out.print("\nIngrese el nombre del cliente a eliminar: ");
-        String nombre = sc.nextLine();
-
-        for (int i = 0; i < totalVentas; i++) {
-            if (ventas[i].cliente.nombre.equalsIgnoreCase(nombre)) {
-                asientosOcupados.remove(ventas[i].asiento);
-
-                for (int j = i; j < totalVentas - 1; j++) {
-                    ventas[j] = ventas[j + 1];
-                }
-                ventas[--totalVentas] = null;
-
-                System.out.println("Reservación eliminada correctamente.");
-                return;
-            }
-        }
-        System.out.println("No se encontró la reservación.");
-    }
-}
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Main {
-    static final String NOMBRE_TEATRO = "Teatro Moro";
+    static String[] nombresClientes = new String[100];
+    static String[] tiposComprador = new String[100];
+    static int[] edades = new int[100];
+
+    static String[] tiposEntrada = new String[100];
+    static String[] asientos = new String[100];
+    static double[] precios = new double[100];
+
+    static int totalReservas = 0;
+
+    static String[] asientosVIP = {"A1", "A2", "A3", "A4", "A5"};
+    static String[] asientosPalco = {"P1", "P2", "P3", "P4", "P5"};
+    static String[] asientosPlateaBaja = {"B1", "B2", "B3", "B4", "B5"};
+    static String[] asientosPlateaAlta = {"PA1", "PA2", "PA3", "PA4", "PA5"};
+    static String[] asientosGaleria = {"G1", "G2", "G3", "G4", "G5"};
+
+    static ArrayList<String> asientosOcupados = new ArrayList<>();
+
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        SistemaReservaciones sistema = new SistemaReservaciones();
         int opcion;
 
         do {
-            System.out.println("\n--- MENU " + NOMBRE_TEATRO + " ---");
+            System.out.println("\n--- MENÚ Teatro Moro ---");
             System.out.println("1. Reservar entrada");
             System.out.println("2. Editar reservación");
             System.out.println("3. Eliminar reservación");
             System.out.println("4. Mostrar resumen de ventas");
-            System.out.println("5. Salir");
+            System.out.println("5. Buscar boleta");
+            System.out.println("6. Salir");
             System.out.print("Ingrese una opción: ");
             opcion = sc.nextInt(); sc.nextLine();
 
             switch (opcion) {
                 case 1:
-                    System.out.print("Tipo de entrada (VIP o General): ");
-                    String tipoEntrada = sc.nextLine();
-                    System.out.print("Tipo de comprador (Estudiante, Adulto, Tercera Edad): ");
-                    String tipoComprador = sc.nextLine();
-                    System.out.print("Nombre del cliente: ");
-                    String nombre = sc.nextLine();
-                    System.out.print("Cantidad de entradas: ");
-                    int cantidad = sc.nextInt(); sc.nextLine();
-
-                    for (int i = 0; i < cantidad; i++) {
-                        System.out.println("Seleccionando asiento #" + (i + 1) + " de " + cantidad);
-                        String asiento = sistema.seleccionarAsiento(tipoEntrada, sc);
-                        sistema.realizarReservacion(tipoEntrada, tipoComprador, nombre, asiento);
-                    }
+                    reservarEntrada(sc);
                     break;
                 case 2:
-                    sistema.editarReservacion(sc);
+                    editarReservacion(sc);
                     break;
                 case 3:
-                    sistema.eliminarReservacion(sc);
+                    eliminarReservacion(sc);
                     break;
                 case 4:
-                    sistema.mostrarResumenVentas();
+                    mostrarResumen();
                     break;
                 case 5:
-                    System.out.println("¡Gracias por utilizar el sistema de reservaciones!");
+                    buscarBoleta(sc);
+                    break;
+                case 6:
+                    System.out.println("¡Gracias por utilizar el sistema!");
                     break;
                 default:
                     System.out.println("Opción inválida.");
             }
-        } while (opcion != 5);
-
+        } while (opcion != 6);
         sc.close();
     }
+
+    static void reservarEntrada(Scanner sc) {
+        System.out.print("Tipo de entrada (VIP, Palco, Platea baja, Platea alta o Galería): ");
+        String tipoEntrada = sc.nextLine().toLowerCase();
+
+        if (!Arrays.asList("vip", "palco", "platea baja", "platea alta", "galería").contains(tipoEntrada)) {
+            System.out.println("Tipo de entrada inválido.");
+            return;
+        }
+
+        System.out.print("Tipo de comprador (niño, mujer, adulto, estudiante, otros): ");
+        String tipoComprador = sc.nextLine().toLowerCase();
+        System.out.print("Edad: ");
+        int edad = sc.nextInt(); sc.nextLine();
+        System.out.print("Nombre del cliente: ");
+        String nombre = sc.nextLine();
+        System.out.print("Cantidad de entradas: ");
+        int cantidad = sc.nextInt(); sc.nextLine();
+
+        for (int i = 0; i < cantidad; i++) {
+            System.out.println("Seleccionando asiento #" + (i + 1));
+            String asiento = seleccionarAsiento(tipoEntrada, sc);
+            double precio = calcularPrecio(tipoEntrada, tipoComprador, edad);
+
+            nombresClientes[totalReservas] = nombre;
+            tiposComprador[totalReservas] = tipoComprador;
+            edades[totalReservas] = edad;
+            tiposEntrada[totalReservas] = tipoEntrada;
+            asientos[totalReservas] = asiento;
+            precios[totalReservas] = precio;
+            asientosOcupados.add(asiento);
+
+            totalReservas++;
+        }
+    }
+
+    static double calcularPrecio(String tipoEntrada, String tipoComprador, int edad) {
+        double precioBase = switch (tipoEntrada) {
+            case "vip" -> 800;
+            case "palco" -> 700;
+            case "platea baja" -> 600;
+            case "platea alta" -> 500;
+            case "galería" -> 400;
+            default -> 0;
+        };
+
+        double descuento = 0;
+        switch (tipoComprador) {
+            case "niño" -> {
+                if (edad <= 13) descuento = 0.10;
+            }
+            case "mujer" -> {
+                if (edad >= 18) descuento = 0.20;
+            }
+            case "estudiante" -> descuento = 0.15;
+            case "adulto" -> {
+                if (edad >= 50) descuento = 0.25;
+            }
+        }
+        return precioBase * (1 - descuento);
+    }
+
+    static String seleccionarAsiento(String tipoEntrada, Scanner sc) {
+        String[] disponibles = switch (tipoEntrada) {
+            case "vip" -> asientosVIP;
+            case "palco" -> asientosPalco;
+            case "platea baja" -> asientosPlateaBaja;
+            case "platea alta" -> asientosPlateaAlta;
+            case "galería" -> asientosGaleria;
+            default -> new String[0];
+        };
+
+        String asiento;
+        do {
+            System.out.print("Seleccione asiento " + Arrays.toString(disponibles) + ": ");
+            asiento = sc.nextLine().toUpperCase();
+            if (!Arrays.asList(disponibles).contains(asiento)) {
+                System.out.println("Asiento no válido.");
+            } else if (asientosOcupados.contains(asiento)) {
+                System.out.println("Asiento ocupado.");
+            } else {
+                return asiento;
+            }
+        } while (true);
+    }
+
+    static void mostrarResumen() {
+        double total = 0;
+        System.out.println("\n--- RESUMEN DE VENTAS ---");
+        for (int i = 0; i < totalReservas; i++) {
+            System.out.println("Cliente: " + nombresClientes[i]);
+            System.out.println("Tipo de Entrada: " + tiposEntrada[i]);
+            System.out.println("Tipo de Comprador: " + tiposComprador[i]);
+            System.out.println("Asiento: " + asientos[i]);
+            System.out.println("Precio pagado: $" + precios[i]);
+            System.out.println("--------------------------");
+            total += precios[i];
+        }
+        System.out.println("Total de entradas vendidas: " + totalReservas);
+        System.out.println("Total de ingresos: $" + total);
+    }
+
+    static void editarReservacion(Scanner sc) {
+        System.out.print("Ingrese el nombre del cliente a editar: ");
+        String nombre = sc.nextLine();
+
+        for (int i = 0; i < totalReservas; i++) {
+            if (nombresClientes[i].equalsIgnoreCase(nombre)) {
+                System.out.println("1. Editar nombre");
+                System.out.println("2. Editar tipo de entrada");
+                System.out.println("3. Editar tipo de comprador");
+                System.out.print("Seleccione una opción: ");
+                int opcion = sc.nextInt(); sc.nextLine();
+
+                switch (opcion) {
+                    case 1:
+                        System.out.print("Nuevo nombre: ");
+                        nombresClientes[i] = sc.nextLine();
+                        break;
+                    case 2:
+                        System.out.print("Nuevo tipo de entrada: ");
+                        tiposEntrada[i] = sc.nextLine().toLowerCase();
+                        precios[i] = calcularPrecio(tiposEntrada[i], tiposComprador[i], edades[i]);
+                        break;
+                    case 3:
+                        System.out.print("Nuevo tipo de comprador: ");
+                        tiposComprador[i] = sc.nextLine().toLowerCase();
+                        precios[i] = calcularPrecio(tiposEntrada[i], tiposComprador[i], edades[i]);
+                        break;
+                    default:
+                        System.out.println("Opción inválida.");
+                }
+                return;
+            }
+        }
+        System.out.println("Reservación no encontrada.");
+    }
+
+    static void eliminarReservacion(Scanner sc) {
+        System.out.print("Ingrese el nombre del cliente a eliminar: ");
+        String nombre = sc.nextLine();
+
+        for (int i = 0; i < totalReservas; i++) {
+            if (nombresClientes[i].equalsIgnoreCase(nombre)) {
+                asientosOcupados.remove(asientos[i]);
+
+                for (int j = i; j < totalReservas - 1; j++) {
+                    nombresClientes[j] = nombresClientes[j + 1];
+                    tiposComprador[j] = tiposComprador[j + 1];
+                    edades[j] = edades[j + 1];
+                    tiposEntrada[j] = tiposEntrada[j + 1];
+                    asientos[j] = asientos[j + 1];
+                    precios[j] = precios[j + 1];
+                }
+                totalReservas--;
+                System.out.println("Reservación eliminada.");
+                return;
+            }
+        }
+        System.out.println("Reservación no encontrada.");
+    }
+    static void buscarBoleta(Scanner sc) {
+        System.out.println("Ingrese el nombre del cliente " );
+        String nombre = sc.nextLine();
+        boolean encontrado = false;
+
+        for (int i = 0; i < totalReservas; i++) {
+            if (nombresClientes[i].equalsIgnoreCase(nombre)) {
+                encontrado= true;
+                System.out.println("\n--- BOLETA ---");
+                System.out.println("Cliente: " + nombresClientes[i]);
+                System.out.println("Tipo de Entrada: " + tiposEntrada[i])
+                System.out.println("Tipo de Comprador: " + tiposComprador[i]);
+                System.out.println("Asiento: " + asientos[i]);
+                System.out.println("Precio pagado: $" + precios[i]);
+
+            }
+        }
+
+        if(!encontrado) {
+            System.out.println("No se encontro la boleta");
+        }
+
+    }
+
 }
